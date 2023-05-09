@@ -1,5 +1,8 @@
 const userModel = require("../models/userModel")
 const bcryptjs = require("bcryptjs")
+const jsonWebToken = require('jsonwebtoken')
+
+const SECRET = process.env.JWT_SECRET
 
 const land = async (req, res, next) => {
     res.send({ message: "Welcome" });
@@ -39,7 +42,9 @@ const signIn = async (req, res, next) => {
                 bcryptjs.compare(password, result[0].password).then((result2) => {
                     console.log(result2)
                     if (result2) {
-                        res.status(200).send({ message: "Welcome" + result[0].firstName, status: true })
+                        const token = jsonWebToken.sign({email},SECRET, {expiresIn: 120} )
+                        console.log(token)
+                        res.status(200).send({ message: "Welcome" + result[0].firstName, status: true, token: token })
                     }else{
                     res.status(401).send({ message: "Invalid password", status: false })
                     }
@@ -54,6 +59,30 @@ const signIn = async (req, res, next) => {
         res.status(500).send({ message: "Internal server error", status: false })
         return next(error)
     }
+}
+
+const verifyToken =  (req, res, next) => {
+    // console.log(req.body.token)
+    // const token =  req.body.token
+    const token = req.headers.authorization.split(" ")[1]
+    console.log(token)
+    jsonWebToken.verify(token, SECRET, (error, decoded) => {
+        if(error){
+            res.status(401).send({message: "Unauthorized", status: false})
+            console.log(error)
+        }else{
+            console.log(decoded)
+            let email = decoded.email
+            if (decoded != undefined){
+                userModel.findOne({email: email}).then((result) => {
+                    console.log(result)
+                    res.status(200).send({message: "Welcome" + email, status: true, data: result})
+                })
+            }else{
+                res.status(401).send({message: "Unauthorized", status: false})
+            }
+        }
+    })
 }
 
 const resetPassword = async (req, res, next) => {
@@ -81,4 +110,4 @@ const resetPassword = async (req, res, next) => {
     }
 }
 
-module.exports = { land, signUp, resetPassword, signIn }
+module.exports = { land, signUp, resetPassword, signIn, verifyToken }
