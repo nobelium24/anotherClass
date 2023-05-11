@@ -1,6 +1,8 @@
 const userModel = require("../models/userModel")
 const bcryptjs = require("bcryptjs")
 const jsonWebToken = require('jsonwebtoken')
+const {cloudinary} = require("../config/cloudinary.config")
+const uploadModel = require("../models/uploadModel")
 
 const SECRET = process.env.JWT_SECRET
 
@@ -25,8 +27,6 @@ const signUp = async (req, res, next) => {
             }
         })
     } catch (error) {
-        console.log(error)
-        res.status(500).send({ message: error.message || "Internal server error", status: false })
         next(error)
     }
 }
@@ -55,8 +55,6 @@ const signIn = async (req, res, next) => {
             res.status(500).send({ message: "Sign in failed", status: false })
         })
     } catch (error) {
-        console.log(error)
-        res.status(500).send({ message: "Internal server error", status: false })
         return next(error)
     }
 }
@@ -104,10 +102,55 @@ const resetPassword = async (req, res, next) => {
 
         })
     } catch (error) {
-        console.log(error)
-        res.status(500).send({ message: "Internal server error", status: false })
         return next(error)
     }
 }
 
-module.exports = { land, signUp, resetPassword, signIn, verifyToken }
+const uploadPicture = async(req, res, next) => {
+    try{
+        const {files} = req.body
+        const result = await cloudinary.uploader.upload(files)
+        console.log(result)
+        if (!result) {
+            return res.status(500).send({message:"file upload error", status:false})
+        }
+        const secure_url = result.secure_url
+        const public_id = result.public_id
+        const file = new uploadModel({secure_url:secure_url, public_id:public_id})
+        const response = await file.save()
+        if(!response){
+            return res.status(500).send({message:"file upload failed", status:false})
+        }
+        res.status(201).send({message:"file uploaded successfully", status:true, data:secure_url})
+    }catch(error){
+        return next(error)
+    }
+}
+
+//OR
+// const uploadPicture = async (req, res, next) => {
+//     let image  = req.body.files
+//     console.log(image)
+//     try {
+//         await cloudinary.uploader.upload(image, (err,result) => {
+//             if(err){
+//                 console.log(err)
+//             }else{
+//                 console.log(result)
+//                 const secure_url = result.secure_url
+//                 const public_id = result.public_id
+//                 const file = new uploadModel({ secure_url: secure_url, public_id: public_id })
+//                 const response =  file.save()
+//                 if (!response) {
+//                     return res.status(500).send({ message: "file upload failed", status: false })
+//                 }
+//                 res.status(201).send({ message: "file uploaded successfully", status: true, data: secure_url })
+//             }
+//         })
+
+//     } catch (error) {
+//         return next(error)
+//     }
+// }
+
+module.exports = { land, signUp, resetPassword, signIn, verifyToken, uploadPicture }
