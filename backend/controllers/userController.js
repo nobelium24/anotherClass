@@ -4,7 +4,7 @@ const jsonWebToken = require('jsonwebtoken')
 const {cloudinary} = require("../config/cloudinary.config")
 const uploadModel = require("../models/uploadModel")
 
-const SECRET = process.env.JWT_SECRET
+const SECRET = "ram"
 
 const land = async (req, res, next) => {
     res.send({ message: "Welcome" });
