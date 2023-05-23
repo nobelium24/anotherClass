@@ -3,6 +3,7 @@ const bcryptjs = require("bcryptjs")
 const jsonWebToken = require('jsonwebtoken')
 const {cloudinary} = require("../config/cloudinary.config")
 const uploadModel = require("../models/uploadModel")
+const {sendMail} = require("../utils/mailer")
 
 const SECRET = "ram"
 
@@ -20,6 +21,7 @@ const signUp = async (req, res, next) => {
                 let form = new userModel(req.body)
                 form.save().then((result2) => {
                     console.log(result2)
+                    sendMail(email) //This function carries our user email as params. 
                     res.status(201).send({ message: "Account has been created successfully", status: true })
                 }).catch((error) => {
                     console.log(error)
@@ -152,5 +154,7 @@ const uploadPicture = async(req, res, next) => {
 //         return next(error)
 //     }
 // }
+
+
 
 module.exports = { land, signUp, resetPassword, signIn, verifyToken, uploadPicture }
